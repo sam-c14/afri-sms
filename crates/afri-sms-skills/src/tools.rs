@@ -195,6 +195,42 @@ pub fn send_sms_tool_definition() -> serde_json::Value {
     })
 }
 
+/// Executes the tool call using any provider or multi-client implementing [`SmsProvider`](afri_sms::SmsProvider).
+///
+/// Converts a [`SendSmsToolInput`] into an outgoing SMS dispatch and formats the
+/// outcome as a [`SendSmsToolOutput`] suitable for LLM agent function call return values.
+///
+/// # Examples
+///
+/// ```rust
+/// use afri_sms::{MultiSmsClient, SendarProvider};
+/// use afri_sms_skills::tools::{execute_tool, SendSmsToolInput};
+///
+/// # async fn doc_test() {
+/// let client = MultiSmsClient::new(SendarProvider::new("api-key", "TestBrand"));
+/// let input = SendSmsToolInput::new("+2348012345678", "OTP: 9812");
+///
+/// let output = execute_tool(&client, input).await;
+/// assert!(output.details.contains("SMS") || !output.success);
+/// # }
+/// ```
+pub async fn execute_tool<P: afri_sms::SmsProvider + ?Sized>(
+    provider: &P,
+    input: SendSmsToolInput,
+) -> SendSmsToolOutput {
+    match provider.send_sms(&input.to, &input.message).await {
+        Ok(response) => {
+            let delivered_by = response.provider;
+            let details = format!(
+                "SMS dispatched successfully via provider '{}'",
+                delivered_by
+            );
+            SendSmsToolOutput::success(response.message_id, delivered_by, details)
+        }
+        Err(err) => SendSmsToolOutput::failure(err.to_string()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -226,5 +262,70 @@ mod tests {
         let fail = SendSmsToolOutput::failure("Connection dropped");
         assert!(!fail.success);
         assert_eq!(fail.details, "Connection dropped");
+    }
+
+    struct MockSuccessProvider;
+
+    #[async_trait::async_trait]
+    impl afri_sms::SmsProvider for MockSuccessProvider {
+        fn name(&self) -> &'static str {
+            "mock_success"
+        }
+
+        async fn send_sms(
+            &self,
+            _to: &str,
+            _message: &str,
+        ) -> Result<afri_sms::SmsResponse, afri_sms::SmsError> {
+            Ok(afri_sms::SmsResponse::new(
+                "msg_mock_123",
+                "delivered",
+                self.name(),
+            ))
+        }
+    }
+
+    struct MockFailProvider;
+
+    #[async_trait::async_trait]
+    impl afri_sms::SmsProvider for MockFailProvider {
+        fn name(&self) -> &'static str {
+            "mock_fail"
+        }
+
+        async fn send_sms(
+            &self,
+            _to: &str,
+            _message: &str,
+        ) -> Result<afri_sms::SmsResponse, afri_sms::SmsError> {
+            Err(afri_sms::SmsError::ProviderError {
+                status_code: 503,
+                message: "Gateway is offline".to_string(),
+            })
+        }
+    }
+
+    #[tokio::test]
+    async fn test_execute_tool_success() {
+        let provider = MockSuccessProvider;
+        let input = SendSmsToolInput::new("+2348012345678", "Code: 4321");
+        let output = execute_tool(&provider, input).await;
+
+        assert!(output.success);
+        assert_eq!(output.message_id.as_deref(), Some("msg_mock_123"));
+        assert_eq!(output.delivered_by.as_deref(), Some("mock_success"));
+        assert!(output.details.contains("SMS dispatched successfully"));
+    }
+
+    #[tokio::test]
+    async fn test_execute_tool_failure() {
+        let provider = MockFailProvider;
+        let input = SendSmsToolInput::new("+2348012345678", "Code: 4321");
+        let output = execute_tool(&provider, input).await;
+
+        assert!(!output.success);
+        assert!(output.message_id.is_none());
+        assert!(output.delivered_by.is_none());
+        assert!(output.details.contains("Gateway is offline"));
     }
 }

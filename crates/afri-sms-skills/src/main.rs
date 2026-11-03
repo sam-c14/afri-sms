@@ -10,6 +10,7 @@ use std::process;
 
 const SKILL_DOC: &str = include_str!("../assets/SKILL.md");
 const SCHEMA_DOC: &str = include_str!("../assets/schema.json");
+const ENV_DOC: &str = include_str!("../assets/.env.example");
 
 fn print_help() {
     println!(
@@ -114,6 +115,7 @@ fn scaffold_skill(dest: &Path, force: bool) -> Result<(), Box<dyn std::error::Er
 
     let skill_path = dest.join("SKILL.md");
     let schema_path = dest.join("schema.json");
+    let env_path = dest.join(".env.example");
 
     if skill_path.exists() && !force {
         println!(
@@ -133,6 +135,16 @@ fn scaffold_skill(dest: &Path, force: bool) -> Result<(), Box<dyn std::error::Er
     } else {
         fs::write(&schema_path, SCHEMA_DOC)?;
         println!("✓ Created {}", schema_path.display());
+    }
+
+    if env_path.exists() && !force {
+        println!(
+            "Note: {} already exists. Use --force to overwrite.",
+            env_path.display()
+        );
+    } else {
+        fs::write(&env_path, ENV_DOC)?;
+        println!("✓ Created {}", env_path.display());
     }
 
     println!(

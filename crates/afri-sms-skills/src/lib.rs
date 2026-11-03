@@ -29,4 +29,6 @@
 
 pub mod tools;
 
-pub use tools::{ProviderChoice, SendSmsToolInput, SendSmsToolOutput, send_sms_tool_definition};
+pub use tools::{
+    ProviderChoice, SendSmsToolInput, SendSmsToolOutput, execute_tool, send_sms_tool_definition,
+};

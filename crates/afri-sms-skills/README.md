@@ -35,6 +35,7 @@ Output:
 ```text
 ✓ Created /path/to/project/.agent/skills/afri-sms/SKILL.md
 ✓ Created /path/to/project/.agent/skills/afri-sms/schema.json
+✓ Created /path/to/project/.agent/skills/afri-sms/.env.example
 
 Successfully scaffolded afri-sms skill into: /path/to/project/.agent/skills/afri-sms
 ```
@@ -47,6 +48,7 @@ Add as a library dependency in `Cargo.toml`:
 
 ```toml
 [dependencies]
+afri-sms = "0.1.0"
 afri-sms-skills = "0.1.1"
 ```
 
@@ -71,4 +73,20 @@ let input: SendSmsToolInput = serde_json::from_str(r#"{
 }"#).unwrap();
 
 assert_eq!(input.provider, Some(ProviderChoice::Termii));
+```
+
+### Direct Tool Execution
+
+```rust
+use afri_sms::{MultiSmsClient, SendarProvider};
+use afri_sms_skills::{execute_tool, SendSmsToolInput};
+
+#[tokio::main]
+async fn main() {
+    let client = MultiSmsClient::new(SendarProvider::new("api-key", "MyBrand"));
+    let input = SendSmsToolInput::new("+2348012345678", "OTP: 9021");
+
+    let result = execute_tool(&client, input).await;
+    println!("Success: {}, Delivered by: {:?}", result.success, result.delivered_by);
+}
 ```
