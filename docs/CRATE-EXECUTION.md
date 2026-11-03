@@ -3,10 +3,10 @@
 This document serves as the strict engineering roadmap for the AI agent building the `afri-sms` open-source crate.
 
 ## Milestone 1: Initialization & Core Primitives
-* [ ] Initialize a new Rust library crate (`cargo new afri-sms --lib`).
-* [ ] Configure `Cargo.toml` with necessary dependencies: `reqwest`, `serde`, `serde_json`, `tokio` (for tests), `async-trait`, `thiserror`, and `tracing`.
-* [ ] Define the unified `SmsError` enum in `src/error.rs` using `thiserror`.
-* [ ] Define the `SmsProvider` async trait and `SmsResponse` struct in `src/provider.rs`.
+* [x] Initialize a new Rust library crate (`cargo new afri-sms --lib`).
+* [x] Configure `Cargo.toml` with necessary dependencies: `reqwest`, `serde`, `serde_json`, `tokio` (for tests), `async-trait`, `thiserror`, and `tracing`.
+* [x] Define the unified `SmsError` enum in `src/error.rs` using `thiserror`.
+* [x] Define the `SmsProvider` async trait and `SmsResponse` struct in `src/provider.rs`.
 
 ## Milestone 2: Provider Implementations
 * [ ] Implement `SendarProvider` in `src/providers/sendar.rs`. Ensure it matches Sendar's specific JSON schema and authentication headers.
