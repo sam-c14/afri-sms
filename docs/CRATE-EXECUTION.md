@@ -9,10 +9,10 @@ This document serves as the strict engineering roadmap for the AI agent building
 * [x] Define the `SmsProvider` async trait and `SmsResponse` struct in `src/provider.rs`.
 
 ## Milestone 2: Provider Implementations
-* [ ] Implement `SendarProvider` in `src/providers/sendar.rs`. Ensure it matches Sendar's specific JSON schema and authentication headers.
-* [ ] Implement `TermiiProvider` in `src/providers/termii.rs`.
-* [ ] Implement `MessageCentralProvider` in `src/providers/message_central.rs`.
-* [ ] Expose these via a cleanly structured module tree (`pub use providers::*;`).
+* [x] Implement `SendarProvider` in `src/providers/sendar.rs`. Ensure it matches Sendar's specific JSON schema and authentication headers.
+* [x] Implement `TermiiProvider` in `src/providers/termii.rs`.
+* [x] Implement `MessageCentralProvider` in `src/providers/message_central.rs`.
+* [x] Expose these via a cleanly structured module tree (`pub use providers::*;`).
 
 ## Milestone 3: The Fallback Engine & Builder
 * [ ] Implement the `MultiSmsClient` struct in `src/client.rs`.
