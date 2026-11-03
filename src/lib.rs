@@ -15,32 +15,25 @@
 //! * [`SmsProvider`]: The unified async trait that standardizes sending SMS across all gateways.
 //! * [`SmsResponse`]: Normalized response containing provider ID, status, and optional raw response.
 //! * [`SmsError`]: Unified error enum mapping provider-specific errors to common variants.
+//! * [`providers`]: Concrete implementations for African telecom providers:
+//!   - [`SendarProvider`]: Modern JSON REST API.
+//!   - [`TermiiProvider`]: Industry-standard Nigerian SMS gateway.
+//!   - [`MessageCentralProvider`]: CPaaS SMS and OTP verification gateway.
 //!
 //! ## Example
 //!
 //! ```rust
-//! use async_trait::async_trait;
-//! use afri_sms::{SmsError, SmsProvider, SmsResponse};
-//!
-//! struct MockProvider;
-//!
-//! #[async_trait]
-//! impl SmsProvider for MockProvider {
-//!     async fn send_sms(&self, to: &str, message: &str) -> Result<SmsResponse, SmsError> {
-//!         Ok(SmsResponse::new("msg_001", "sent", self.name()))
-//!     }
-//!
-//!     fn name(&self) -> &'static str {
-//!         "mock"
-//!     }
-//! }
+//! use afri_sms::{SmsError, SmsProvider, SendarProvider};
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), SmsError> {
-//!     let provider = MockProvider;
-//!     let response = provider.send_sms("+2348012345678", "Your OTP is 987654").await?;
-//!     assert_eq!(response.message_id, "msg_001");
-//!     assert_eq!(response.provider, "mock");
+//!     let provider = SendarProvider::builder()
+//!         .api_key("your_sendar_api_key")
+//!         .sender_id("FintechBrand")
+//!         .route("transactional")
+//!         .build()?;
+//!
+//!     assert_eq!(provider.name(), "sendar");
 //!     Ok(())
 //! }
 //! ```
@@ -50,6 +43,8 @@
 
 pub mod error;
 pub mod provider;
+pub mod providers;
 
 pub use error::SmsError;
 pub use provider::{SmsProvider, SmsResponse};
+pub use providers::*;
