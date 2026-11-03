@@ -21,7 +21,7 @@ This document serves as the strict engineering roadmap for the AI agent building
 * [x] Add `tracing::info!` and `tracing::warn!` logs to document when a fallback occurs.
 
 ## Milestone 4: Testing & Documentation
-* [ ] Set up `wiremock` or `mockito` in the `[dev-dependencies]` to mock HTTP responses.
-* [ ] Write unit tests for each provider ensuring payload serialization matches their respective docs.
-* [ ] Write an integration test proving the Fallback Engine successfully switches to the secondary provider when the primary mock server returns a 500 status code.
-* [ ] Write a comprehensive `README.md` with usage examples, installation instructions, and contribution guidelines.
+* [x] Set up `wiremock` or `mockito` in the `[dev-dependencies]` to mock HTTP responses.
+* [x] Write unit tests for each provider ensuring payload serialization matches their respective docs.
+* [x] Write an integration test proving the Fallback Engine successfully switches to the secondary provider when the primary mock server returns a 500 status code.
+* [x] Write a comprehensive `README.md` with usage examples, installation instructions, and contribution guidelines.
