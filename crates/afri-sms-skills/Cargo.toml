@@ -1,9 +1,9 @@
 [package]
 name = "afri-sms-skills"
-description = "LLM agent tool definitions and prompt schemas for the afri-sms crate."
+description = "LLM agent tool definitions, prompt schemas, and CLI scaffolder for afri-sms."
 readme = "README.md"
 documentation = "https://docs.rs/afri-sms-skills"
-version.workspace = true
+version = "0.1.1"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -11,6 +11,10 @@ repository.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 categories.workspace = true
+
+[[bin]]
+name = "afri-sms-skills"
+path = "src/main.rs"
 
 [dependencies]
 afri-sms = { workspace = true }

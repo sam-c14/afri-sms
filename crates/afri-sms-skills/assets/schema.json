@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SendSmsTool",
+  "description": "Dispatches an SMS or OTP message to a recipient phone number across African telecom gateways with automated secondary fallback routing.",
+  "type": "object",
+  "properties": {
+    "to": {
+      "type": "string",
+      "description": "Recipient phone number in E.164 format (e.g. +2348012345678, +254712345678)."
+    },
+    "message": {
+      "type": "string",
+      "description": "Text message content to deliver (e.g. OTP code, transaction alert, login notification)."
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "sendar",
+        "termii",
+        "message_central"
+      ],
+      "description": "Optional specific gateway to prioritize."
+    }
+  },
+  "required": [
+    "to",
+    "message"
+  ]
+}
