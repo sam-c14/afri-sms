@@ -1,11 +1,14 @@
 [package]
 name = "afri-sms-skills"
 description = "LLM agent tool definitions and prompt schemas for the afri-sms crate."
+readme = "README.md"
+documentation = "https://docs.rs/afri-sms-skills"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
-readme.workspace = true
+repository.workspace = true
+homepage.workspace = true
 keywords.workspace = true
 categories.workspace = true
 

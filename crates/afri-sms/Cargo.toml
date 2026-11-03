@@ -1,11 +1,14 @@
 [package]
 name = "afri-sms"
 description = "A unified, highly-optimized SMS/OTP adapter library for African telecom providers with automated fallback routing."
+readme = "README.md"
+documentation = "https://docs.rs/afri-sms"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
-readme.workspace = true
+repository.workspace = true
+homepage.workspace = true
 keywords.workspace = true
 categories.workspace = true
 
