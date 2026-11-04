@@ -48,7 +48,7 @@ Add either member crate to your `Cargo.toml`:
 ```toml
 [dependencies]
 # For core SMS routing and provider adapters:
-afri-sms = "0.1.0"
+afri-sms = "0.1.1"
 
 # For LLM agent tool schemas:
 afri-sms-skills = "0.1.0"

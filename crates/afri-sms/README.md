@@ -12,7 +12,7 @@ Provides asynchronous adapters for African telecom gateways (Sendar, Termii, Mes
 
 ```toml
 [dependencies]
-afri-sms = "0.1.0"
+afri-sms = "0.1.1"
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 ```
 

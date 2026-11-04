@@ -24,7 +24,7 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-afri-sms = "0.1.0"
+afri-sms = "0.1.1"
 afri-sms-skills = "0.1.1" # Optional: for agent schemas & tool execution helpers
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
