@@ -37,9 +37,9 @@ Create a `.env` file in your project root (a template is available in `.env.exam
 
 | Variable | Provider | Required | Description |
 |---|---|---|---|
-| `SENDAR_API_KEY` | Sendar | Yes | Bearer authentication token |
+| `SENDAR_API_KEY` | Sendar | Yes | API-KEY authentication token |
 | `SENDAR_SENDER_ID` | Sendar | Yes | Approved brand sender name |
-| `SENDAR_ROUTE` | Sendar | No | `transactional` (default) or `promotional` |
+| `SENDAR_WALLET_TYPE` | Sendar | No | `transactional` (default), `promotional`, or `otp` |
 | `TERMII_API_KEY` | Termii | Yes | Termii API key (sent in JSON body) |
 | `TERMII_SENDER_ID` | Termii | Yes | Approved sender ID (3 to 11 characters) |
 | `TERMII_CHANNEL` | Termii | No | `dnd` (default for OTP) or `generic` |
@@ -53,9 +53,10 @@ Create a `.env` file in your project root (a template is available in `.env.exam
 ## African Telecom Provider Quirks & Rules
 
 ### 1. Sendar (`sendar`)
-- **Base URL:** `https://api.sendar.io/v2/sms/send`
-- **Authentication:** `Authorization: Bearer <SENDAR_API_KEY>` HTTP header.
-- **Payload:** JSON `{ "to": "...", "message": "...", "sender_id": "...", "route": "transactional" }`
+- **Base URL:** `https://sms-submit.sendar.io/api/sms/send`
+- **Authentication:** `API-KEY: <SENDAR_API_KEY>` HTTP header.
+- **Payload:** JSON `{ "contact": [{ "number": "234...", "body": "...", "sms_type": "plain" }], "sender_id": "...", "wallet_type": "transactional" }`
+- **Delivery Status:** `GET /get/sms/{uid}` queries real-time status by message ID.
 - **Strengths:** Low-latency REST API, well-suited for high-throughput transactional alerts.
 
 ### 2. Termii (`termii`)
@@ -176,7 +177,7 @@ async fn test_primary_failover_to_secondary() {
 
     // Primary server returns 503 Service Unavailable
     Mock::given(method("POST"))
-        .and(path("/v2/sms/send"))
+        .and(path("/sms/send"))
         .respond_with(ResponseTemplate::new(503))
         .mount(&primary_server)
         .await;

@@ -7,7 +7,7 @@ async fn test_fallback_engine_switches_to_secondary_on_primary_500() {
     // 1. Set up primary mock server returning HTTP 500 Internal Server Error
     let primary_mock = MockServer::start().await;
     Mock::given(method("POST"))
-        .and(path("/v2/sms/send"))
+        .and(path("/sms/send"))
         .respond_with(
             ResponseTemplate::new(500)
                 .set_body_string("Internal Gateway Error: Telecom provider unreachable"),
@@ -32,7 +32,7 @@ async fn test_fallback_engine_switches_to_secondary_on_primary_500() {
 
     // 3. Configure the MultiSmsClient
     let primary = SendarProvider::builder()
-        .api_key("sendar_key")
+        .api_key("sk_live_test_sendar_key")
         .sender_id("BankAlert")
         .base_url(primary_mock.uri())
         .build()
@@ -69,11 +69,11 @@ async fn test_fallback_engine_aborts_without_retry_on_client_400_error() {
 
     // Primary returns 400 Bad Request
     let bad_request_json = serde_json::json!({
-        "status": "error",
+        "status": false,
         "message": "Invalid recipient phone number format"
     });
     Mock::given(method("POST"))
-        .and(path("/v2/sms/send"))
+        .and(path("/sms/send"))
         .respond_with(ResponseTemplate::new(400).set_body_json(&bad_request_json))
         .expect(1)
         .mount(&primary_mock)
@@ -88,7 +88,7 @@ async fn test_fallback_engine_aborts_without_retry_on_client_400_error() {
         .await;
 
     let primary = SendarProvider::builder()
-        .api_key("sendar_key")
+        .api_key("sk_live_sendar_key")
         .sender_id("Alert")
         .base_url(primary_mock.uri())
         .build()
@@ -122,7 +122,7 @@ async fn test_fallback_engine_returns_all_providers_failed_when_both_fail() {
 
     // Both servers return 500
     Mock::given(method("POST"))
-        .and(path("/v2/sms/send"))
+        .and(path("/sms/send"))
         .respond_with(ResponseTemplate::new(500).set_body_string("Primary Down"))
         .expect(1)
         .mount(&primary_mock)

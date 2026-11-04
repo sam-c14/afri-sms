@@ -101,7 +101,7 @@ async fn main() -> Result<(), SmsError> {
 
 | Provider | Gateway Type | Auth Mechanism | Default Route |
 | :--- | :--- | :--- | :--- |
-| **Sendar** | Modern REST JSON | `Authorization: Bearer <key>` | Transactional |
+| **Sendar** | Modern REST JSON | Header `API-KEY` | Transactional |
 | **Termii** | Nigerian Industry Standard | Body `api_key` | DND / Transactional |
 | **Message Central** | Multi-channel CPaaS | Header `authToken` | SMS (OTP / Alerts) |
 
