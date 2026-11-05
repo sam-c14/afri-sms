@@ -1,9 +1,9 @@
 [package]
 name = "afri-sms-skills"
-description = "LLM agent tool definitions, prompt schemas, and CLI scaffolder for afri-sms."
+description = "Agentic documentation, prompt schemas, and CLI scaffolder for afri-sms."
 readme = "README.md"
 documentation = "https://docs.rs/afri-sms-skills"
-version = "0.1.1"
+version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true

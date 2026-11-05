@@ -4,13 +4,8 @@
 //! enabling LLM coding agents to immediately use `afri-sms`.
 
 use std::env;
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process;
-
-const SKILL_DOC: &str = include_str!("../assets/SKILL.md");
-const SCHEMA_DOC: &str = include_str!("../assets/schema.json");
-const ENV_DOC: &str = include_str!("../assets/.env.example");
 
 fn print_help() {
     println!(
@@ -25,6 +20,8 @@ COMMANDS:
 OPTIONS:
     -d, --dir <PATH> Specify a custom target directory (default: .agent/skills/afri-sms)
     -s, --schema     Print the LLM function calling JSON schema to stdout and exit
+        --docs       Print the full agent skill documentation (SKILL.md) to stdout
+        --env        Print the .env.example template to stdout
     -f, --force      Overwrite existing skill files if already present
     -h, --help       Print help information
     -V, --version    Print version information
@@ -54,7 +51,15 @@ fn main() {
                 return;
             }
             "-s" | "--schema" => {
-                println!("{}", SCHEMA_DOC.trim());
+                println!("{}", afri_sms_skills::schema_json().trim());
+                return;
+            }
+            "--docs" => {
+                println!("{}", afri_sms_skills::skill_markdown().trim());
+                return;
+            }
+            "--env" => {
+                println!("{}", afri_sms_skills::env_example().trim());
                 return;
             }
             "-f" | "--force" => {
@@ -104,52 +109,13 @@ fn main() {
         }
     };
 
-    if let Err(err) = scaffold_skill(&destination, force) {
+    if let Err(err) = afri_sms_skills::scaffold(&destination, force) {
         eprintln!("Error: {}", err);
         process::exit(1);
-    }
-}
-
-fn scaffold_skill(dest: &Path, force: bool) -> Result<(), Box<dyn std::error::Error>> {
-    fs::create_dir_all(dest)?;
-
-    let skill_path = dest.join("SKILL.md");
-    let schema_path = dest.join("schema.json");
-    let env_path = dest.join(".env.example");
-
-    if skill_path.exists() && !force {
-        println!(
-            "Note: {} already exists. Use --force to overwrite.",
-            skill_path.display()
-        );
-    } else {
-        fs::write(&skill_path, SKILL_DOC)?;
-        println!("✓ Created {}", skill_path.display());
-    }
-
-    if schema_path.exists() && !force {
-        println!(
-            "Note: {} already exists. Use --force to overwrite.",
-            schema_path.display()
-        );
-    } else {
-        fs::write(&schema_path, SCHEMA_DOC)?;
-        println!("✓ Created {}", schema_path.display());
-    }
-
-    if env_path.exists() && !force {
-        println!(
-            "Note: {} already exists. Use --force to overwrite.",
-            env_path.display()
-        );
-    } else {
-        fs::write(&env_path, ENV_DOC)?;
-        println!("✓ Created {}", env_path.display());
     }
 
     println!(
         "\nSuccessfully scaffolded afri-sms skill into: {}",
-        dest.display()
+        destination.display()
     );
-    Ok(())
 }

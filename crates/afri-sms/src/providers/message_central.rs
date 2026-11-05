@@ -290,10 +290,10 @@ impl MessageCentralProvider {
             ("type", DEFAULT_TYPE),
         ];
 
-        if let Some(ref sender) = self.sender_id {
-            if !sender.trim().is_empty() {
-                query_params.push(("senderId", sender.as_str()));
-            }
+        if let Some(ref sender) = self.sender_id
+            && !sender.trim().is_empty()
+        {
+            query_params.push(("senderId", sender.as_str()));
         }
 
         if let Some(ref cust_id) = self.customer_id {
@@ -711,10 +711,10 @@ impl SmsProvider for MessageCentralProvider {
             ("message", clean_message),
         ];
 
-        if let Some(ref sender) = self.sender_id {
-            if !sender.trim().is_empty() {
-                query_params.push(("senderId", sender.as_str()));
-            }
+        if let Some(ref sender) = self.sender_id
+            && !sender.trim().is_empty()
+        {
+            query_params.push(("senderId", sender.as_str()));
         }
 
         if let Some(ref cust_id) = self.customer_id {

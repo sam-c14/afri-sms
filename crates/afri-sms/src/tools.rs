@@ -1,8 +1,25 @@
-//! Agent tool definitions and JSON schemas.
+//! Agent tool definitions, JSON schemas, and execution logic.
+//!
+//! This module provides strongly-typed function-calling schemas and execution helpers
+//! compatible with modern LLM interfaces (e.g. OpenAI function calling, Gemini tool use, Anthropic tools).
+//! It enables autonomous agents to inspect SMS provider options and execute resilient SMS dispatches.
+//!
+//! # Examples
+//!
+//! ```rust
+//! use afri_sms::tools::{SendSmsToolInput, ProviderChoice};
+//!
+//! let input = SendSmsToolInput::new("+2348012345678", "Your verification code is 482910")
+//!     .with_provider(ProviderChoice::Sendar);
+//!
+//! assert_eq!(input.to, "+2348012345678");
+//! assert_eq!(input.provider, Some(ProviderChoice::Sendar));
+//! ```
 
+use crate::SmsProvider;
 use serde::{Deserialize, Serialize};
 
-/// Supported African SMS gateway options selectable by an LLM agent.
+/// Supported African SMS gateway options selectable by an LLM agent or consumer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ProviderChoice {
@@ -20,7 +37,7 @@ impl ProviderChoice {
     /// # Examples
     ///
     /// ```
-    /// use afri_sms_skills::ProviderChoice;
+    /// use afri_sms::tools::ProviderChoice;
     ///
     /// assert_eq!(ProviderChoice::Sendar.as_str(), "sendar");
     /// assert_eq!(ProviderChoice::Termii.as_str(), "termii");
@@ -56,7 +73,7 @@ impl SendSmsToolInput {
     /// # Examples
     ///
     /// ```
-    /// use afri_sms_skills::SendSmsToolInput;
+    /// use afri_sms::tools::SendSmsToolInput;
     ///
     /// let input = SendSmsToolInput::new("+2348012345678", "Hello from agent");
     /// assert_eq!(input.to, "+2348012345678");
@@ -77,7 +94,7 @@ impl SendSmsToolInput {
     /// # Examples
     ///
     /// ```
-    /// use afri_sms_skills::{SendSmsToolInput, ProviderChoice};
+    /// use afri_sms::tools::{SendSmsToolInput, ProviderChoice};
     ///
     /// let input = SendSmsToolInput::new("+2348012345678", "OTP: 1234")
     ///     .with_provider(ProviderChoice::Termii);
@@ -90,7 +107,7 @@ impl SendSmsToolInput {
     }
 }
 
-/// Output returned to an LLM agent following an SMS dispatch attempt.
+/// Output returned following an SMS tool dispatch attempt.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SendSmsToolOutput {
     /// Whether the message was successfully dispatched.
@@ -114,7 +131,7 @@ impl SendSmsToolOutput {
     /// # Examples
     ///
     /// ```
-    /// use afri_sms_skills::SendSmsToolOutput;
+    /// use afri_sms::tools::SendSmsToolOutput;
     ///
     /// let output = SendSmsToolOutput::success("msg_123", "sendar", "Sent successfully");
     /// assert!(output.success);
@@ -140,7 +157,7 @@ impl SendSmsToolOutput {
     /// # Examples
     ///
     /// ```
-    /// use afri_sms_skills::SendSmsToolOutput;
+    /// use afri_sms::tools::SendSmsToolOutput;
     ///
     /// let output = SendSmsToolOutput::failure("Gateway timeout on primary and fallback");
     /// assert!(!output.success);
@@ -162,7 +179,7 @@ impl SendSmsToolOutput {
 /// # Examples
 ///
 /// ```
-/// use afri_sms_skills::send_sms_tool_definition;
+/// use afri_sms::tools::send_sms_tool_definition;
 ///
 /// let def = send_sms_tool_definition();
 /// assert_eq!(def["name"], "send_sms");
@@ -195,7 +212,7 @@ pub fn send_sms_tool_definition() -> serde_json::Value {
     })
 }
 
-/// Executes the tool call using any provider or multi-client implementing [`SmsProvider`](afri_sms::SmsProvider).
+/// Executes the tool call using any provider or multi-client implementing [`SmsProvider`].
 ///
 /// Converts a [`SendSmsToolInput`] into an outgoing SMS dispatch and formats the
 /// outcome as a [`SendSmsToolOutput`] suitable for LLM agent function call return values.
@@ -204,7 +221,7 @@ pub fn send_sms_tool_definition() -> serde_json::Value {
 ///
 /// ```rust
 /// use afri_sms::{MultiSmsClient, SendarProvider};
-/// use afri_sms_skills::tools::{execute_tool, SendSmsToolInput};
+/// use afri_sms::tools::{execute_tool, SendSmsToolInput};
 ///
 /// # async fn doc_test() {
 /// let client = MultiSmsClient::new(SendarProvider::new("api-key", "TestBrand"));
@@ -214,7 +231,7 @@ pub fn send_sms_tool_definition() -> serde_json::Value {
 /// assert!(output.details.contains("SMS") || !output.success);
 /// # }
 /// ```
-pub async fn execute_tool<P: afri_sms::SmsProvider + ?Sized>(
+pub async fn execute_tool<P: SmsProvider + ?Sized>(
     provider: &P,
     input: SendSmsToolInput,
 ) -> SendSmsToolOutput {
@@ -267,7 +284,7 @@ mod tests {
     struct MockSuccessProvider;
 
     #[async_trait::async_trait]
-    impl afri_sms::SmsProvider for MockSuccessProvider {
+    impl SmsProvider for MockSuccessProvider {
         fn name(&self) -> &'static str {
             "mock_success"
         }
@@ -276,8 +293,8 @@ mod tests {
             &self,
             _to: &str,
             _message: &str,
-        ) -> Result<afri_sms::SmsResponse, afri_sms::SmsError> {
-            Ok(afri_sms::SmsResponse::new(
+        ) -> Result<crate::SmsResponse, crate::SmsError> {
+            Ok(crate::SmsResponse::new(
                 "msg_mock_123",
                 "delivered",
                 self.name(),
@@ -288,7 +305,7 @@ mod tests {
     struct MockFailProvider;
 
     #[async_trait::async_trait]
-    impl afri_sms::SmsProvider for MockFailProvider {
+    impl SmsProvider for MockFailProvider {
         fn name(&self) -> &'static str {
             "mock_fail"
         }
@@ -297,8 +314,8 @@ mod tests {
             &self,
             _to: &str,
             _message: &str,
-        ) -> Result<afri_sms::SmsResponse, afri_sms::SmsError> {
-            Err(afri_sms::SmsError::ProviderError {
+        ) -> Result<crate::SmsResponse, crate::SmsError> {
+            Err(crate::SmsError::ProviderError {
                 status_code: 503,
                 message: "Gateway is offline".to_string(),
             })

@@ -8,6 +8,8 @@ description: Unified SMS & OTP adapter for African telecom providers (Sendar, Te
 ## Overview
 `afri-sms` is a production-grade, asynchronous Rust SDK that unifies African telecom aggregators into a single, cohesive interface. It features an automated secondary fallback routing engine designed specifically to mitigate volatile carrier downtime and network timeouts common across African telecommunications infrastructure.
 
+All implementation and runtime execution logic (including provider adapters, client orchestrators, and tool execution helpers) lives directly inside the core `afri-sms` crate. The `afri-sms-skills` crate is purely responsible for Agentic workflows: providing AI agents with complete documentation, function-calling schemas, prompt templates, and repository scaffolding (`.agent/skills/afri-sms/`) so agents understand how to generate accurate code against `afri-sms`.
+
 ## Trigger Conditions & When to Use
 Activate this skill when:
 - Writing or maintaining code that sends SMS notifications, OTP codes, or 2FA verification to users in African countries (Nigeria, Kenya, Ghana, South Africa, etc.).
@@ -24,10 +26,12 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-afri-sms = "0.1.1"
-afri-sms-skills = "0.1.1" # Optional: for agent schemas & tool execution helpers
+afri-sms = "0.1.2"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
+
+> [!NOTE]
+> All execution logic and tool types (`execute_tool`, `SendSmsToolInput`, `SendSmsToolOutput`, `ProviderChoice`) reside inside `afri-sms` (`afri_sms::tools`). The `afri-sms-skills` package is strictly for agentic context and scaffolding (`afri-sms-skills init`), not runtime execution.
 
 ---
 
@@ -137,8 +141,8 @@ async fn main() -> Result<(), SmsError> {
 When building an autonomous coding or conversational agent:
 
 ```rust
-use afri_sms::{MultiSmsClient, SendarProvider, TermiiProvider};
-use afri_sms_skills::{execute_tool, SendSmsToolInput, ProviderChoice};
+use afri_sms::{MultiSmsClient, SendarProvider};
+use afri_sms::tools::{execute_tool, SendSmsToolInput, SendSmsToolOutput, ProviderChoice};
 
 #[tokio::main]
 async fn main() {

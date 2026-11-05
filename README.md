@@ -12,8 +12,8 @@ An asynchronous, highly-optimized Rust Cargo Workspace providing unified SMS/OTP
 
 | Crate | Path | Description |
 | :--- | :--- | :--- |
-| [**`afri-sms`**](crates/afri-sms) | `crates/afri-sms` | Core library crate: `SmsProvider` trait, normalized `SmsResponse`, `SmsError`, provider adapters (Sendar, Termii, Message Central), and `MultiSmsClient` fallback engine. |
-| [**`afri-sms-skills`**](crates/afri-sms-skills) | `crates/afri-sms-skills` | LLM agent tool definitions, function calling schemas, and prompt structs for autonomous AI integration. |
+| [**`afri-sms`**](crates/afri-sms) | `crates/afri-sms` | Core library crate: `SmsProvider` trait, normalized `SmsResponse`, `SmsError`, provider adapters (Sendar, Termii, Message Central), `MultiSmsClient` fallback engine, and `afri_sms::tools` execution engine. |
+| [**`afri-sms-skills`**](crates/afri-sms-skills) | `crates/afri-sms-skills` | Agentic documentation, prompt context, JSON tool schemas, and repository scaffolding CLI (`afri-sms-skills init`) for autonomous AI coding agents. |
 
 ---
 
@@ -22,17 +22,20 @@ An asynchronous, highly-optimized Rust Cargo Workspace providing unified SMS/OTP
 ```mermaid
 flowchart TD
     subgraph Agent["AI Agent / LLM Interface"]
-        Skills["afri-sms-skills (Tool Definitions)"]
+        Skills["afri-sms-skills (Context, Docs & Schema)"]
     end
 
     subgraph Core["Core Engine (afri-sms)"]
+        Tools["afri_sms::tools (execute_tool)"]
         Multi["MultiSmsClient"]
         Sendar["SendarProvider (Primary)"]
         Termii["TermiiProvider (Fallback)"]
         MC["MessageCentralProvider"]
     end
 
-    Agent --> Multi
+    Agent -.->|"Provides Prompt Context"| Skills
+    Agent -->|"Executes Tool"| Tools
+    Tools --> Multi
     Multi -->|"1. Dispatch"| Sendar
     Sendar -->|"5xx / Timeout"| Fallback["Catch Retriable Error"]
     Fallback -->|"2. Automatic Retry"| Termii
@@ -43,15 +46,13 @@ flowchart TD
 
 ## Installation
 
-Add either member crate to your `Cargo.toml`:
-
 ```toml
 [dependencies]
-# For core SMS routing and provider adapters:
-afri-sms = "0.1.1"
+# For core SMS routing, providers, and tool execution:
+afri-sms = "0.1.2"
 
-# For LLM agent tool schemas:
-afri-sms-skills = "0.1.0"
+# (Optional) For agent orchestrators needing programmatic access to documentation & prompt context:
+afri-sms-skills = "0.1.2"
 
 # Async runtime:
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }

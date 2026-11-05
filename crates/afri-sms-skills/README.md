@@ -10,6 +10,13 @@ Designed for integration with modern agent frameworks (OpenAI Function Calling, 
 
 ---
 
+## Architecture Note
+
+- **[`afri-sms`](https://crates.io/crates/afri-sms)** contains all runtime execution logic, provider adapters, fallback routing, and tool execution (`afri_sms::tools::{execute_tool, SendSmsToolInput, SendSmsToolOutput, ProviderChoice, send_sms_tool_definition}`).
+- **`afri-sms-skills`** is purely responsible for **Agentic workflows**: prompt context, function-calling schemas, documentation, and repository scaffolding so autonomous agents understand the core library and generate correct code.
+
+---
+
 ## CLI Installation & Scaffolding (Like `npx`)
 
 Install globally as a CLI tool:
@@ -40,51 +47,78 @@ Output:
 Successfully scaffolded afri-sms skill into: /path/to/project/.agent/skills/afri-sms
 ```
 
+### CLI Inspection Commands:
+
+```bash
+# Print tool JSON Schema for LLM registration:
+afri-sms-skills --schema
+
+# Print full skill documentation (SKILL.md):
+afri-sms-skills --docs
+
+# Print environment template:
+afri-sms-skills --env
+```
+
 ---
 
-## Library Usage (In Your Agent Application)
+## Library Usage (For Agent Orchestrators)
 
 Add as a library dependency in `Cargo.toml`:
 
 ```toml
 [dependencies]
-afri-sms = "0.1.0"
-afri-sms-skills = "0.1.1"
+afri-sms-skills = "0.1.2"
 ```
 
 ### Retrieve Function Calling JSON Schema
 
 ```rust
-use afri_sms_skills::send_sms_tool_definition;
+use afri_sms_skills::tool_schema_json;
 
-let tool_schema = send_sms_tool_definition();
+let tool_schema = tool_schema_json();
 println!("{}", serde_json::to_string_pretty(&tool_schema).unwrap());
 ```
 
-### Parse Agent Function Call Payloads
+### Inject Agent Skill Context into System Prompts
 
 ```rust
-use afri_sms_skills::{SendSmsToolInput, ProviderChoice};
+use afri_sms_skills::agent_prompt_context;
 
-let input: SendSmsToolInput = serde_json::from_str(r#"{
-    "to": "+2348012345678",
-    "message": "Security code: 882910",
-    "provider": "termii"
-}"#).unwrap();
-
-assert_eq!(input.provider, Some(ProviderChoice::Termii));
+let context = agent_prompt_context();
+println!("Agent Prompt Context:\n{}", context);
 ```
 
-### Direct Tool Execution
+### Programmatic Workspace Scaffolding
+
+```rust,no_run
+use std::path::Path;
+use afri_sms_skills::scaffold;
+
+scaffold(Path::new(".agent/skills/afri-sms"), false).unwrap();
+```
+
+---
+
+## Tool Execution (In `afri-sms`)
+
+To execute SMS tools within your application or agent runtime, use `afri-sms`:
+
+```toml
+[dependencies]
+afri-sms = "0.1.2"
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+```
 
 ```rust
 use afri_sms::{MultiSmsClient, SendarProvider};
-use afri_sms_skills::{execute_tool, SendSmsToolInput};
+use afri_sms::tools::{execute_tool, SendSmsToolInput, ProviderChoice};
 
 #[tokio::main]
 async fn main() {
     let client = MultiSmsClient::new(SendarProvider::new("api-key", "MyBrand"));
-    let input = SendSmsToolInput::new("+2348012345678", "OTP: 9021");
+    let input = SendSmsToolInput::new("+2348012345678", "OTP: 9021")
+        .with_provider(ProviderChoice::Sendar);
 
     let result = execute_tool(&client, input).await;
     println!("Success: {}, Delivered by: {:?}", result.success, result.delivered_by);

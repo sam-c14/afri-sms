@@ -20,6 +20,7 @@
 //!   - [`SendarProvider`]: Modern JSON REST API.
 //!   - [`TermiiProvider`]: Industry-standard Nigerian SMS gateway.
 //!   - [`MessageCentralProvider`]: CPaaS SMS and OTP verification gateway.
+//! * [`tools`]: Function-calling schemas, tool definitions, and [`execute_tool`] dispatcher for autonomous agents and apps.
 //!
 //! ## Example
 //!
@@ -49,8 +50,12 @@ pub mod client;
 pub mod error;
 pub mod provider;
 pub mod providers;
+pub mod tools;
 
 pub use client::{MultiSmsClient, MultiSmsClientBuilder};
 pub use error::SmsError;
 pub use provider::{SmsProvider, SmsResponse};
 pub use providers::*;
+pub use tools::{
+    ProviderChoice, SendSmsToolInput, SendSmsToolOutput, execute_tool, send_sms_tool_definition,
+};

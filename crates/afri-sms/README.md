@@ -48,3 +48,24 @@ async fn main() -> Result<(), SmsError> {
     Ok(())
 }
 ```
+
+## LLM Agent Tool Dispatching
+
+All tool execution logic and function-calling schemas live directly within `afri-sms`:
+
+```rust
+use afri_sms::{MultiSmsClient, SendarProvider};
+use afri_sms::tools::{execute_tool, SendSmsToolInput, SendSmsToolOutput, ProviderChoice, send_sms_tool_definition};
+
+#[tokio::main]
+async fn main() {
+    let client = MultiSmsClient::new(SendarProvider::new("sendar-api-key", "MyBrand"));
+
+    // Function calling input
+    let input = SendSmsToolInput::new("+2348012345678", "Your OTP is 123456")
+        .with_provider(ProviderChoice::Sendar);
+
+    let output = execute_tool(&client, input).await;
+    println!("Delivered: {}, ID: {:?}", output.success, output.message_id);
+}
+```
