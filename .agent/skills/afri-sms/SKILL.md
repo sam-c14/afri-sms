@@ -60,7 +60,8 @@ Create a `.env` file in your project root (a template is available in `.env.exam
 - **Base URL:** `https://sms-submit.sendar.io/api/sms/send`
 - **Authentication:** `API-KEY: <SENDAR_API_KEY>` HTTP header.
 - **Payload:** JSON `{ "contact": [{ "number": "234...", "body": "...", "sms_type": "plain" }], "sender_id": "...", "wallet_type": "transactional" }`
-- **Delivery Status:** `GET /get/sms/{uid}` queries real-time status by message ID.
+- **Delivery Status:** `GET /get/sms/{uid}` queries real-time status by message ID via `provider.get_message_status(&message_id)`.
+- **Wallet Types:** `transactional` (default for critical notifications), `promotional`, or `otp`.
 - **Strengths:** Low-latency REST API, well-suited for high-throughput transactional alerts.
 
 ### 2. Termii (`termii`)
@@ -71,11 +72,19 @@ Create a `.env` file in your project root (a template is available in `.env.exam
   - `afri-sms` handles this sanitization automatically for you.
 - **Sender ID Rules:** Must be 3 to 11 alphanumeric characters. Unregistered sender IDs trigger an HTTP 400 error.
 - **DND Route:** Nigeria's NCC enforces "Do Not Disturb" (DND). Always use the `dnd` channel for OTP and banking notifications to bypass carrier DND blocking.
+- **APIs:**
+  - Standard SMS via `provider.send_sms(to, message)`
+  - Dynamic SMS OTP PIN dispatch via `provider.send_token(TermiiSendTokenRequest { ... })`
+  - Zero-cost in-app token generation via `provider.generate_in_app_token(TermiiGenerateTokenRequest { ... })`
 
 ### 3. Message Central (`message_central`)
 - **Base URL:** `https://cpaas.messagecentral.com/verification/v3/send`
 - **Authentication:** Custom HTTP header: `authToken: <MESSAGE_CENTRAL_AUTH_TOKEN>`.
 - **Dialing Code Separation:** Message Central requires splitting the international dialing code (e.g., `234`) and national number. `afri-sms` automatically parses and splits E.164 phone numbers.
+- **APIs:**
+  - Standard SMS via `provider.send_sms(to, message)`
+  - OTP dispatch via `provider.send_otp(mobile, Some("SMS"))` (returns `verification_id`)
+  - OTP code validation via `provider.validate_otp(verification_id, code, Some("SMS"))` (returns `bool`)
 
 ---
 
@@ -136,13 +145,110 @@ async fn main() -> Result<(), SmsError> {
 }
 ```
 
-### Recipe 2: LLM Agent Tool Dispatching
+### Recipe 2: Sendar Transactional SMS & Status Lookup
+
+```rust
+use afri_sms::{SendarProvider, SmsError};
+
+#[tokio::main]
+async fn main() -> Result<(), SmsError> {
+    let sendar = SendarProvider::builder()
+        .api_key(std::env::var("SENDAR_API_KEY").map_err(|e| SmsError::ConfigurationError(e.to_string()))?)
+        .sender_id("BankAlert")
+        .wallet_type("transactional")
+        .build()?;
+
+    // 1. Send transactional SMS
+    let response = sendar
+        .send_sms("+2348012345678", "Transfer of NGN 50,000 successful.")
+        .await?;
+    println!("Sent! ID: {}", response.message_id);
+
+    // 2. Query real-time delivery status
+    let status = sendar.get_message_status(&response.message_id).await?;
+    println!("Delivery status: {}, Cost: {:?}", status.status, status.cost_per_unit);
+    Ok(())
+}
+```
+
+### Recipe 3: Termii SMS, OTP Token & In-App Token
+
+```rust
+use afri_sms::{TermiiProvider, TermiiSendTokenRequest, TermiiGenerateTokenRequest, TermiiPinType, SmsError};
+
+#[tokio::main]
+async fn main() -> Result<(), SmsError> {
+    let termii = TermiiProvider::builder()
+        .api_key(std::env::var("TERMII_API_KEY").map_err(|e| SmsError::ConfigurationError(e.to_string()))?)
+        .sender_id("BankAlert")
+        .channel("dnd") // Use DND to guarantee carrier delivery in Nigeria
+        .build()?;
+
+    // 1. Standard SMS dispatch (auto-cleans '+234...' to '234...')
+    let res = termii.send_sms("+2348012345678", "Your login code is 882910").await?;
+
+    // 2. Dispatch dynamic OTP SMS token
+    let token_res = termii.send_token(TermiiSendTokenRequest {
+        pin_type: TermiiPinType::Numeric,
+        to: "2348012345678".to_string(),
+        from: None,
+        channel: Some("dnd".to_string()),
+        pin_attempts: 3,
+        pin_time_to_live: 10,
+        pin_length: 6,
+        pin_placeholder: "< 123456 >".to_string(),
+        message_text: "Your security code is < 123456 >".to_string(),
+    }).await?;
+    println!("OTP dispatched, Pin ID: {}", token_res.pin_id);
+
+    // 3. Generate In-App Token (zero SMS transmission cost)
+    let in_app = termii.generate_in_app_token(TermiiGenerateTokenRequest {
+        pin_type: TermiiPinType::Numeric,
+        phone_number: "2348012345678".to_string(),
+        pin_attempts: 3,
+        pin_time_to_live: 5,
+        pin_length: 6,
+    }).await?;
+    println!("In-app token generated: {}", in_app.otp);
+    Ok(())
+}
+```
+
+### Recipe 4: Message Central CPaaS SMS & Verify Now V3 OTP
+
+```rust
+use afri_sms::{MessageCentralProvider, SmsError};
+
+#[tokio::main]
+async fn main() -> Result<(), SmsError> {
+    let mc = MessageCentralProvider::builder()
+        .auth_token(std::env::var("MESSAGE_CENTRAL_AUTH_TOKEN").map_err(|e| SmsError::ConfigurationError(e.to_string()))?)
+        .customer_id(std::env::var("MESSAGE_CENTRAL_CUSTOMER_ID").unwrap_or_default())
+        .sender_id("BrandAlert")
+        .default_country_code("234")
+        .build()?;
+
+    // 1. Standard SMS
+    let sms_res = mc.send_sms("+2348012345678", "Your package has arrived.").await?;
+
+    // 2. Initiate OTP verification session via Verify Now V3
+    let otp_res = mc.send_otp("+2348012345678", Some("SMS")).await?;
+    println!("OTP session created, verification ID: {}", otp_res.verification_id);
+
+    // 3. Validate user-submitted code
+    let is_valid = mc.validate_otp(&otp_res.verification_id, "482910", Some("SMS")).await?;
+    println!("OTP valid: {}", is_valid);
+    Ok(())
+}
+```
+
+### Recipe 5: LLM Agent Tool Dispatching
 
 When building an autonomous coding or conversational agent:
 
 ```rust
 use afri_sms::{MultiSmsClient, SendarProvider};
-use afri_sms::tools::{execute_tool, SendSmsToolInput, SendSmsToolOutput, ProviderChoice};
+use afri_sms::tools::{execute_tool, SendSmsToolInput, SendSmsToolOutput, ProviderChoice, send_sms_tool_definition};
 
 #[tokio::main]
 async fn main() {
@@ -167,7 +273,7 @@ async fn main() {
 }
 ```
 
-### Recipe 3: Integration Testing with `wiremock`
+### Recipe 6: Integration Testing with `wiremock`
 
 ```rust
 use afri_sms::{SendarProvider, TermiiProvider, MultiSmsClient, SmsProvider};
@@ -224,7 +330,7 @@ async fn test_primary_failover_to_secondary() {
 }
 ```
 
-### Recipe 4: Implementing a Custom Provider
+### Recipe 7: Implementing a Custom Provider
 
 Any custom SMS gateway can be seamlessly attached to `MultiSmsClient`:
 

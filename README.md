@@ -98,13 +98,21 @@ async fn main() -> Result<(), SmsError> {
 
 ---
 
-## Supported Providers
+## Supported Providers & Key Use Cases
 
-| Provider | Gateway Type | Auth Mechanism | Default Route |
-| :--- | :--- | :--- | :--- |
-| **Sendar** | Modern REST JSON | Header `API-KEY` | Transactional |
-| **Termii** | Nigerian Industry Standard | Body `api_key` | DND / Transactional |
-| **Message Central** | Multi-channel CPaaS | Header `authToken` | SMS (OTP / Alerts) |
+| Provider / Module | Key Capabilities & Use Cases | Primary APIs |
+| :--- | :--- | :--- |
+| **`MultiSmsClient`** | Automated secondary fallback routing on 5xx outages & timeouts | `MultiSmsClient::builder()`, `send_sms()` |
+| **`SendarProvider`** | High-throughput transactional SMS & real-time delivery status | `SendarProvider::builder()`, `get_message_status()` |
+| **`TermiiProvider`** | Auto `+` stripping, dynamic SMS OTP PINs & zero-cost in-app tokens | `send_sms()`, `send_token()`, `generate_in_app_token()` |
+| **`MessageCentralProvider`** | CPaaS SMS, auto dialing code parsing, Verify Now V3 OTP lifecycle | `send_sms()`, `send_otp()`, `validate_otp()` |
+| **`afri_sms::tools`** | LLM agent function calling schema & runtime tool execution | `send_sms_tool_definition()`, `execute_tool()` |
+
+> [!TIP]
+> A comprehensive, executable showcase covering all five use cases is available in [`demo.rs`](demo.rs). Run it via:
+> ```bash
+> cargo run -p afri-sms --example demo
+> ```
 
 ---
 
